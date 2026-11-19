@@ -1,71 +1,74 @@
 import groups from '../../data/groups.json';
+import { getUpcomingSlots } from '../../utils/dateUtils';
 
 export default function SchedulePage() {
-  const daysOfWeek = [
-    "Понедельник",
-    "Вторник",
-    "Среда",
-    "Четверг",
-    "Пятница",
-    "Суббота",
-    "Воскресенье"
-  ];
+  const upcomingSlots = getUpcomingSlots(groups);
 
-  const getGroupsForDay = (day) => {
-    return groups.filter((group) => 
-      group.schedule.some((slot) => slot.day === day)
-    );
-  };
+  // Группируем слоты по датам для отображения
+  const slotsByDate = upcomingSlots.reduce((acc, slot) => {
+    const dateKey = slot.dateStr;
+    if (!acc[dateKey]) {
+      acc[dateKey] = {
+        dateStr: slot.dateStr,
+        dayName: slot.dayName,
+        items: []
+      };
+    }
+    acc[dateKey].items.push(slot);
+    return acc;
+  }, {});
+
+  const sortedDates = Object.values(slotsByDate).sort((a, b) => {
+    // Простая сортировка по дате (dd.MM)
+    const [d1, m1] = a.dateStr.split('.').map(Number);
+    const [d2, m2] = b.dateStr.split('.').map(Number);
+    return (m1 * 31 + d1) - (m2 * 31 + d2);
+  });
 
   return (
     <div className="p-4 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8 text-gray-900">Расписание занятий</h1>
+      <h1 className="text-3xl font-bold mb-8 text-gray-900">Расписание занятий на 14 дней</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {daysOfWeek.map((day) => {
-          const dayGroups = getGroupsForDay(day);
-          
-          return (
-            <div key={day} className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex flex-col">
+        {sortedDates.length === 0 ? (
+          <p className="text-gray-500">Нет доступных занятий на ближайшие 14 дней.</p>
+        ) : (
+          sortedDates.map((dateGroup) => (
+            <div key={dateGroup.dateStr} className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex flex-col">
               <h2 className="text-lg font-bold text-gray-800 mb-4 border-b border-gray-200 pb-2">
-                {day}
+                {dateGroup.dayName.charAt(0).toUpperCase() + dateGroup.dayName.slice(1)} ({dateGroup.dateStr})
               </h2>
               
-              {dayGroups.length === 0 ? (
-                <p className="text-sm text-gray-400 italic">Занятий нет</p>
-              ) : (
-                <div className="space-y-4">
-                  {dayGroups.map((group) => {
-                    const slot = group.schedule.find((s) => s.day === day);
-                    const occupied = 0;
-                    const isFull = occupied >= group.capacity;
+              <div className="space-y-4">
+                {dateGroup.items.map((slot) => {
+                  const occupied = 0; // Логика занятости будет добавлена позже
+                  const isFull = occupied >= slot.groupCapacity;
 
-                    return (
-                      <div 
-                        key={`${group.id}-${day}`} 
-                        className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="text-lg font-bold text-blue-600">{group.level}</h3>
-                          <span className={`text-xs font-medium px-2 py-1 rounded ${isFull ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                            {isFull ? "Мест нет" : "Есть свободные места"}
-                          </span>
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 mb-1">Преподаватель: <span className="font-medium text-gray-900">{group.teacher}</span></p>
-                        <p className="text-sm text-gray-600 mb-3">Время: <span className="font-medium text-gray-900">{slot.time}</span></p>
-                        
-                        <div className="text-xs font-bold text-gray-500">
-                          Занято {occupied} из {group.capacity}
-                        </div>
+                  return (
+                    <div 
+                      key={`${slot.groupId}-${slot.dateStr}`} 
+                      className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-lg font-bold text-blue-600">{slot.groupLevel}</h3>
+                        <span className={`text-xs font-medium px-2 py-1 rounded ${isFull ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                          {isFull ? "Мест нет" : "Есть свободные места"}
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                      
+                      <p className="text-sm text-gray-600 mb-1">Преподаватель: <span className="font-medium text-gray-900">{slot.groupTeacher}</span></p>
+                      <p className="text-sm text-gray-600 mb-3">Время: <span className="font-medium text-gray-900">{slot.time}</span></p>
+                      
+                      <div className="text-xs font-bold text-gray-500">
+                        Занято {occupied} из {slot.groupCapacity}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          );
-        })}
+          ))
+        )}
       </div>
     </div>
   );
