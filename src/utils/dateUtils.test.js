@@ -24,6 +24,12 @@ const mockGroups = [
   }
 ];
 
+function assertEquals(actual, expected, message) {
+  if (actual !== expected) {
+    throw new Error(`Test Failed: ${message}. Expected "${expected}", got "${actual}"`);
+  }
+}
+
 function runTests() {
   console.log("Запуск тестов dateUtils...");
 
@@ -48,33 +54,35 @@ function runTests() {
   }
   console.log("✓ Тест перехода через год пройден");
 
-  // 3. Тест: Корректность дня недели и времени для всех слотов
-  // Проверяем каждый слот индивидуально
+  // 3. Тест: Корректность слотов и количество
   const allSlots = getUpcomingSlots(mockGroups, new Date(2026, 10, 1));
   
-  if (allSlots.length === 0) {
-    throw new Error("Ошибка: Не сгенерировано ни одного занятия");
-  }
+  // Проверка количества занятий (4 занятия за 14 дней для mockGroups)
+  assertEquals(allSlots.length, 4, "Количество занятий за 14 дней");
 
   allSlots.forEach(slot => {
-    // Проверяем день недели непосредственно по объекту date
+    // Проверка соответствия исходному расписанию группы
+    const group = mockGroups.find(g => g.id === slot.groupId);
+    const scheduleEntry = group.schedule.find(s => s.day === slot.day && s.time === slot.time);
+
+    if (!scheduleEntry) {
+      throw new Error(`Ошибка: Слот ${slot.dayName} ${slot.time} не найден в расписании группы ${slot.groupId}`);
+    }
+
+    // Проверка дня недели по объекту date
     const expectedDayIndex = DAY_MAP[slot.day];
     const actualDayIndex = getDay(slot.date);
     
-    if (expectedDayIndex === undefined) {
-      throw new Error(`Ошибка: Неизвестный день недели в расписании: ${slot.day}`);
-    }
-
     if (expectedDayIndex !== actualDayIndex) {
-      throw new Error(`Ошибка: День недели ${slot.day} не совпадает с датой ${slot.date}`);
+      throw new Error(`Ошибка: День недели ${slot.dayName} не совпадает с датой ${slot.date}`);
     }
 
-    // Проверяем сохранение времени
+    // Проверка времени
     if (slot.time !== "18:00") {
       throw new Error(`Ошибка: Время занятия ${slot.time} не совпадает с ожидаемым 18:00`);
     }
   });
-  console.log("✓ Тест корректности дня недели и времени пройден");
+  console.log("✓ Тест корректности слотов и количества пройден");
 
   console.log("Все тесты пройдены успешно.");
 }
