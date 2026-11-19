@@ -10,8 +10,20 @@ export const getSignups = () => {
 
 export const saveSignup = (signup) => {
   const signups = getSignups();
-  // Удаляем старую запись с таким же телефоном, если она есть (перезапись)
-  const filtered = signups.filter(s => s.phone !== signup.phone);
-  filtered.push({ ...signup, id: Date.now().toString(), status: 'active' });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+  
+  // Помечаем старую активную запись этого пользователя как отмененную
+  const updatedSignups = signups.map(s => 
+    s.phone === signup.phone && s.status === 'active' 
+      ? { ...s, status: 'cancelled' } 
+      : s
+  );
+
+  // Добавляем новую запись
+  updatedSignups.push({ 
+    ...signup, 
+    id: Date.now().toString(), 
+    status: 'active' 
+  });
+  
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSignups));
 };

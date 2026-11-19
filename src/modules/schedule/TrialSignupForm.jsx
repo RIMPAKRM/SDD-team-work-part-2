@@ -11,6 +11,8 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
   const [existingSignup, setExistingSignup] = useState(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  const slotDateISO = slot.date.toISOString().split('T')[0];
+
   const validate = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Имя обязательно';
@@ -32,9 +34,21 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
     e.preventDefault();
     if (!validate()) return;
 
-    // Проверка на дубликат
+    // Проверка занятости
     const allSignups = getSignups();
-    const duplicate = allSignups.find(s => s.phone === formData.phone);
+    const occupied = allSignups.filter(s => 
+      s.status === 'active' && 
+      s.groupId === slot.groupId && 
+      s.date === slotDateISO
+    ).length;
+
+    if (occupied >= slot.groupCapacity) {
+      alert('К сожалению, на это время мест больше нет.');
+      return;
+    }
+
+    // Проверка на дубликат
+    const duplicate = allSignups.find(s => s.status === 'active' && s.phone === formData.phone);
     
     if (duplicate && !existingSignup) {
       setExistingSignup(duplicate);
@@ -47,7 +61,7 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
       groupId: slot.groupId,
       groupLevel: slot.groupLevel,
       groupTeacher: slot.groupTeacher,
-      dateStr: slot.dateStr,
+      date: slotDateISO,
       time: slot.time
     });
     setIsSuccess(true);
@@ -89,19 +103,25 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
         {existingSignup ? (
           <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800 mb-2">У вас уже есть запись:</p>
-            <p className="font-bold text-sm">{existingSignup.groupLevel} на {existingSignup.dateStr}</p>
+            <p className="font-bold text-sm">{existingSignup.groupLevel} на {existingSignup.date}</p>
             <p className="text-sm mt-2">Вы хотите перезаписаться на текущее занятие?</p>
             <div className="flex gap-2 mt-4">
               <button onClick={() => setExistingSignup(null)} className="flex-1 py-1 border rounded">Нет</button>
               <button onClick={() => {
-                saveSignup({ ...formData, groupId: slot.groupId, groupLevel: slot.groupLevel, groupTeacher: slot.groupTeacher, dateStr: slot.dateStr, time: slot.time });
+                saveSignup({ 
+                  ...formData, 
+                  groupId: slot.groupId, 
+                  groupLevel: slot.groupLevel, 
+                  groupTeacher: slot.groupTeacher, 
+                  date: slotDateISO, 
+                  time: slot.time 
+                });
                 setIsSuccess(true);
               }} className="flex-1 py-1 bg-blue-600 text-white rounded">Да, перезаписаться</button>
             </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* ... поля формы ... */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">Имя</label>
               <input id="name" type="text" required className="w-full border rounded-lg p-2 mt-1" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />

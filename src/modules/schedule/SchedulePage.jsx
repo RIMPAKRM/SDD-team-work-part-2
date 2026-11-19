@@ -46,10 +46,16 @@ export default function SchedulePage() {
               
               <div className="space-y-4">
                 {dateGroup.items.map((slot) => {
-                  // Считаем занятость для конкретной группы и даты
+                  // Форматируем дату слота в YYYY-MM-DD для сравнения
+                  const slotDateISO = slot.date.toISOString().split('T')[0];
+                  
+                  // Считаем занятость только для активных записей
                   const occupied = signups.filter(s => 
-                    s.groupId === slot.groupId && s.dateStr === slot.dateStr
+                    s.status === 'active' && 
+                    s.groupId === slot.groupId && 
+                    s.date === slotDateISO
                   ).length;
+                  
                   const isFull = occupied >= slot.groupCapacity;
 
                   return (
@@ -94,7 +100,7 @@ export default function SchedulePage() {
           slot={selectedSlot} 
           onClose={() => setSelectedSlot(null)}
           onSuccess={() => {
-            setSignups(getSignups()); // Обновляем список записей
+            setSignups(getSignups());
             setSelectedSlot(null);
           }}
         />
