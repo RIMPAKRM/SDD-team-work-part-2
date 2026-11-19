@@ -1,6 +1,16 @@
 import { getUpcomingSlots } from './dateUtils.js';
 import { addDays, getDay } from 'date-fns';
 
+const DAY_MAP = {
+  "Воскресенье": 0,
+  "Понедельник": 1,
+  "Вторник": 2,
+  "Среда": 3,
+  "Четверг": 4,
+  "Пятница": 5,
+  "Суббота": 6
+};
+
 const mockGroups = [
   {
     "id": "group-1",
@@ -38,15 +48,21 @@ function runTests() {
   }
   console.log("✓ Тест перехода через год пройден");
 
-  // 3. Тест: Корректность дня недели и сохранение времени
-  const mondayStart = new Date(2026, 10, 1); // 1 ноября 2026 (воскресенье)
-  const mondaySlots = getUpcomingSlots(mockGroups, mondayStart);
-  
-  mondaySlots.forEach(slot => {
-    const dayOfWeek = getDay(slot.date);
-    // Проверяем, что день недели слота соответствует дню недели в расписании
-    const expectedDayIndex = { "Понедельник": 1, "Четверг": 4 }[slot.day];
-    if (dayOfWeek !== expectedDayIndex) {
+  // 3. Тест: Корректность дня недели и времени для всех слотов
+  // 1 ноября 2026 (воскресенье) по 14 ноября 2026 (суббота)
+  // Понедельники: 2, 9 (2 занятия)
+  // Четверги: 5, 12 (2 занятия)
+  // Итого: 4 занятия
+  const slotsCount = getUpcomingSlots(mockGroups, new Date(2026, 10, 1)).length;
+  if (slotsCount !== 4) {
+    throw new Error(`Ошибка: Ожидалось 4 занятия, получено ${slotsCount}`);
+  }
+
+  slots.forEach(slot => {
+    const expectedDayIndex = DAY_MAP[slot.day];
+    const actualDayIndex = getDay(slot.date);
+    
+    if (expectedDayIndex !== actualDayIndex) {
       throw new Error(`Ошибка: День недели ${slot.day} не совпадает с датой ${slot.date}`);
     }
     if (slot.time !== "18:00") {
