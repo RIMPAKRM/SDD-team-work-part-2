@@ -36,7 +36,7 @@ export default function SchedulePage() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {sortedDates.length === 0 ? (
-          <p className="text-gray-500">Нет доступных занятий на ближайших 14 дней.</p>
+          <p className="text-gray-500">Нет доступных занятий на ближайшие 14 дней.</p>
         ) : (
           sortedDates.map((dateGroup) => (
             <div key={dateGroup.dateStr} className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex flex-col">
@@ -46,8 +46,11 @@ export default function SchedulePage() {
               
               <div className="space-y-4">
                 {dateGroup.items.map((slot) => {
-                  // Форматируем дату слота в YYYY-MM-DD для сравнения
-                  const slotDateISO = slot.date.toISOString().split('T')[0];
+                  // Форматируем дату слота в YYYY-MM-DD локально
+                  const year = slot.date.getFullYear();
+                  const month = String(slot.date.getMonth() + 1).padStart(2, '0');
+                  const day = String(slot.date.getDate()).padStart(2, '0');
+                  const slotDateISO = `${year}-${month}-${day}`;
                   
                   // Считаем занятость только для активных записей
                   const occupied = signups.filter(s => 

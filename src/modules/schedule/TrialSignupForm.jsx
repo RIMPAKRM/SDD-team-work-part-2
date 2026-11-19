@@ -10,8 +10,12 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
   const [errors, setErrors] = useState({});
   const [existingSignup, setExistingSignup] = useState(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const slotDateISO = slot.date.toISOString().split('T')[0];
+  const year = slot.date.getFullYear();
+  const month = String(slot.date.getMonth() + 1).padStart(2, '0');
+  const day = String(slot.date.getDate()).padStart(2, '0');
+  const slotDateISO = `${year}-${month}-${day}`;
 
   const validate = () => {
     const newErrors = {};
@@ -32,7 +36,9 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (isSubmitting || !validate()) return;
+
+    setIsSubmitting(true);
 
     // Проверка занятости
     const allSignups = getSignups();
@@ -44,6 +50,7 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
 
     if (occupied >= slot.groupCapacity) {
       alert('К сожалению, на это время мест больше нет.');
+      setIsSubmitting(false);
       return;
     }
 
@@ -52,6 +59,7 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
     
     if (duplicate && !existingSignup) {
       setExistingSignup(duplicate);
+      setIsSubmitting(false);
       return;
     }
 
@@ -65,6 +73,7 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
       time: slot.time
     });
     setIsSuccess(true);
+    setIsSubmitting(false);
   };
 
   const handlePhoneChange = (e) => {
@@ -106,8 +115,9 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
             <p className="font-bold text-sm">{existingSignup.groupLevel} на {existingSignup.date}</p>
             <p className="text-sm mt-2">Вы хотите перезаписаться на текущее занятие?</p>
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setExistingSignup(null)} className="flex-1 py-1 border rounded">Нет</button>
+              <button onClick={() => setExistingSignup(null)} className="flex-1 py-1 border rounded" disabled={isSubmitting}>Нет</button>
               <button onClick={() => {
+                setIsSubmitting(true);
                 saveSignup({ 
                   ...formData, 
                   groupId: slot.groupId, 
@@ -117,27 +127,28 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
                   time: slot.time 
                 });
                 setIsSuccess(true);
-              }} className="flex-1 py-1 bg-blue-600 text-white rounded">Да, перезаписаться</button>
+                setIsSubmitting(false);
+              }} className="flex-1 py-1 bg-blue-600 text-white rounded" disabled={isSubmitting}>Да, перезаписаться</button>
             </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">Имя</label>
-              <input id="name" type="text" required className="w-full border rounded-lg p-2 mt-1" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+              <input id="name" type="text" required className="w-full border rounded-lg p-2 mt-1" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} disabled={isSubmitting} />
             </div>
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Телефон</label>
-              <input id="phone" type="tel" required placeholder="+7 (XXX) XXX-XX-XX" className="w-full border rounded-lg p-2 mt-1" value={formData.phone} onChange={handlePhoneChange} />
+              <input id="phone" type="tel" required placeholder="+7 (XXX) XXX-XX-XX" className="w-full border rounded-lg p-2 mt-1" value={formData.phone} onChange={handlePhoneChange} disabled={isSubmitting} />
               {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
             </div>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email (опционально)</label>
-              <input id="email" type="email" className="w-full border rounded-lg p-2 mt-1" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+              <input id="email" type="email" className="w-full border rounded-lg p-2 mt-1" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} disabled={isSubmitting} />
             </div>
             <div className="flex gap-3 mt-6">
-              <button type="button" onClick={onClose} className="flex-1 py-2 border rounded-lg hover:bg-gray-50">Отмена</button>
-              <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Записаться</button>
+              <button type="button" onClick={onClose} className="flex-1 py-2 border rounded-lg hover:bg-gray-50" disabled={isSubmitting}>Отмена</button>
+              <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" disabled={isSubmitting}>Записаться</button>
             </div>
           </form>
         )}
