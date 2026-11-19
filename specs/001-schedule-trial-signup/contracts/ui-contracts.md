@@ -1,5 +1,7 @@
 # UI Contracts: модуль `schedule`
 
+> Синхронизировано с реализацией (2026-11-19).
+
 Внешних API нет (frontend-only). Контракты — публичный интерфейс модуля: маршруты,
 экспорты компонентов, форма данных.
 
@@ -7,67 +9,82 @@
 
 | Путь | Компонент | Поведение |
 | --- | --- | --- |
-| `/schedule` | `SchedulePage` | Страница расписания + запись |
-| `/` | — | `Navigate` → `/schedule` |
+| `/` | `SchedulePage` | Страница расписания + запись |
 
-## Экспорты модуля `src/modules/schedule/`
+⚠️ **Для фичи 002**: маршрута `/schedule` пока нет, обработка `?group=<id>` не
+реализована — переход вида `/schedule?group=g1` ни к чему не приведёт. Сейчас
+единственный рабочий путь — `/`. Подсветка/предвыбор группы по параметру требует
+доработки `SchedulePage` (см. межмодульный контракт в спеке 002).
 
-```jsx
-// index.js (barrel) — только эти два имени считаются публичными
-export { default as SchedulePage } from './SchedulePage.jsx';
+## Файлы модуля `src/modules/schedule/`
+
+```text
+SchedulePage.jsx      # список слотов по датам + подсчёт занятости + модалка формы
+TrialSignupForm.jsx   # модальная форма записи (name/phone/email), дубль-диалог, успех
 ```
 
-Остальные компоненты (`ScheduleCalendar`, `BookingForm`, `BookingSummary`,
-`MyBooking`, `EventCard`) — внутренние, импортируются только внутри модуля.
+Публичных экспортов через barrel `index.js` нет — `App.jsx` импортирует
+`SchedulePage` напрямую.
+
+Общие утилиты (в `src/utils/`, вне модуля):
+
+- `dateUtils.js` — `getUpcomingSlots(groups, startDate = new Date())`: вхождения
+  расписания на 14 дней → `LessonSlot[]` (см. data-model.md).
+- `storage.js` — `getSignups()`, `saveSignup(signup)` над ключом `trial_signups`.
+- `dateUtils.test.js` — standalone-проверки (запуск `node src/utils/dateUtils.test.js`,
+  тест-раннер не требуется).
 
 ## Контракт данных `src/data/groups.json`
 
 ```json
 [
   {
-    "id": "g1",
-    "name": "Start",
+    "id": "group-1",
     "level": "A1",
-    "teacherName": "Анна Смирнова",
-    "teacherRole": "Преподаватель",
-    "capacity": 8,
-    "enrolled": 5,
+    "teacher": "Анна Иванова",
     "schedule": [
-      { "weekday": 1, "startTime": "18:00", "durationMin": 90 },
-      { "weekday": 3, "startTime": "18:00", "durationMin": 90 }
-    ]
+      { "day": "Понедельник", "time": "18:00" },
+      { "day": "Четверг", "time": "18:00" }
+    ],
+    "capacity": 8
   }
 ]
 ```
 
-## Контракт формы `BookingForm`
+Требования: 6 записей `group-1`…`group-6`; `day` — русское название дня недели;
+`time` — `"HH:MM"`; `capacity` = 8. Полей `name`/`enrolled`/`durationMin` нет.
 
-Вход: `group` (Group), `onSuccess(booking)`, `onCancel()`.
+## Контракт формы `TrialSignupForm`
+
+Вход: `slot` (LessonSlot), `onClose()`, `onSuccess()` — модальное окно поверх страницы.
 
 Поля и ошибки (рус.):
 
 | Поле | Правило | Сообщение при ошибке |
 | --- | --- | --- |
-| `date` | дата из ближайших занятий группы, `capacityLeft > 0` | «Выберите дату занятия» / «На эту дату мест нет» |
-| `name` | обязательно, ≥ 2 симв | «Введите имя (мин. 2 символа)» |
-| `phone` | обязательно, 11–15 цифр после нормализации | «Введите корректный телефон» |
-| `email` | опционально, формат email | «Некорректный email» |
+| `name` | обязательно, непустое | «Имя обязательно» (валидация есть; поле также `required`) |
+| `phone` | обязательно, строго `+7 (XXX) XXX-XX-XX`; автоформат при вводе | «Неверный формат: +7 (XXX) XXX-XX-XX» |
+| `email` | опционально, формат email | «Неверный формат email» |
 
-Выход (submit, валидация пройдена): `TrialBooking` (см. data-model.md).
+Выход (submit, валидация пройдена, место есть): `TrialSignup` сохраняется через
+`saveSignup` (см. data-model.md) → экран «Запись подтверждена!».
 
-## Контракт стора `useBookingsStore`
+## Контракт хранилища `storage.js`
 
 ```js
-bookings: TrialBooking[]
-myPhone: string | null        // телефон «своей» записи: ставится в addBooking, сбрасывается при её отмене
-addBooking({ name, phone, email, groupId, lessonDate }) → booking   // заменяет запись с тем же phone
-cancelByPhone(phone) → void
-findByPhone(phone) → TrialBooking | undefined
-trialsOn(groupId, lessonDate) → number
+getSignups() → TrialSignup[]                 // localStorage['trial_signups'] || []
+saveSignup(signup) → void                    // старые active с тем же phone → cancelled; новая — active
 ```
 
 ## Поведенческие контракты
 
-- Клик по событию в календаре с `capacityLeft > 0` → открывается `BookingForm` для группы; с `capacityLeft = 0` → форма не открывается, событие помечено «мест нет».
-- Успешная запись → показ `BookingSummary` + toast/блок «Вы записаны»; `MyBooking` отображается при следующем открытии страницы, если `findByPhone(myPhone)` возвращает активную запись.
-- «Отменить запись» в `MyBooking` → место возвращается, блок пропадает.
+- Список занятий группируется по датам (14 дней); дни без занятий не выводятся.
+- `occupied = count(active записи на groupId+date)`; при `occupied >= 8` — бейдж
+  «Мест нет», кнопка «Записаться» не рендерится.
+- Клик «Записаться» на свободном слоте → модальная форма; слот (группа+дата+время)
+  уже выбран — отдельного выбора даты в форме нет.
+- При отправке повторно проверяется занятость: если мест нет — alert «мест больше нет».
+- Активная запись с тем же телефоном → блок «У вас уже есть запись» →
+  «Да, перезаписаться» заменяет её новой (старая → `cancelled`).
+- Подтверждение: «Вы записаны на {уровень} ({преподаватель}) на {дата} в {время}»;
+  после закрытия счётчик «Занято» на странице обновляется.

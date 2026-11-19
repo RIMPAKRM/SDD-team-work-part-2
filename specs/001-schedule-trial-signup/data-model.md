@@ -1,65 +1,71 @@
 # Data Model: Расписание групп и запись на пробный урок
 
+> Синхронизировано с реализацией (2026-11-19).
+
 ## Group (статичные данные, `src/data/groups.json`)
 
 | Поле | Тип | Описание |
 | --- | --- | --- |
-| `id` | string | `g1`…`g6` |
-| `name` | string | Название группы («Start», «Intermediate»…) |
-| `level` | string | `A1 | A2 | B1 | B2 | C1 | IELTS` |
-| `teacherName` | string | ФИО преподавателя |
-| `teacherRole` | string | Короткая роль («сертифицированный преподаватель»…) — опционально |
-| `schedule` | array | `[{ weekday: 0–6 (0=Вс,1=Пн…), startTime: "HH:MM", durationMin: int }]` |
+| `id` | string | `group-1`…`group-6` |
+| `level` | string | `A1 | A2 | B1 | B2 | C1 | IELTS Prep` |
+| `teacher` | string | ФИО преподавателя |
+| `schedule` | array | `[{ day: "Понедельник"|…|"Воскресенье" (рус. название), time: "HH:MM" }]` — только время начала, длительность не хранится |
 | `capacity` | number | Всегда 8 |
-| `enrolled` | number | Штатно записанных студентов (0–8) |
+
+Полей `name`, `teacherRole`, `enrolled`, `durationMin` в данных **нет**: у группы нет названия и штатной занятости.
 
 ### Начальные данные (seed)
 
-| id | name | level | teacher | расписание | enrolled |
-| --- | --- | --- | --- | --- | --- |
-| g1 | Start | A1 | Анна Смирнова | Пн 18:00–19:30, Ср 18:00–19:30 | 5 |
-| g2 | Foundation | A2 | Дмитрий Козлов | Вт 10:00–11:30, Чт 10:00–11:30 | **8 (мест нет)** |
-| g3 | Intermediate | B1 | Елена Морозова | Пн/Ср/Пт 12:00–13:30 | 6 |
-| g4 | Upper-Intermediate | B2 | James Carter | Вт 18:30–20:00, Чт 18:30–20:00 | 7 |
-| g5 | Advanced | C1 | Ольга Ветрова | Сб 11:00–14:00 | 4 |
-| g6 | IELTS Prep | IELTS | Михаил Громов | Пт 18:00–20:00 | 3 |
+| id | level | teacher | расписание |
+| --- | --- | --- | --- |
+| group-1 | A1 | Анна Иванова | Пн 18:00, Чт 18:00 |
+| group-2 | A2 | Борис Петров | Вт 19:00, Пт 19:00 |
+| group-3 | B1 | Елена Сидорова | Ср 18:00, Сб 11:00 |
+| group-4 | B2 | Дмитрий Смирнов | Пн 20:00, Чт 20:00 |
+| group-5 | C1 | Ольга Кузнецова | Вт 20:00, Пт 20:00 |
+| group-6 | IELTS Prep | Игорь Васильев | Ср 20:00, Сб 13:00 |
 
-## LessonInstance (производная сущность, не хранится)
+## LessonSlot (производная сущность, не хранится)
 
-Генерируется из `Group.schedule` на окно дат.
+Генерируется `getUpcomingSlots(groups, startDate)` из `src/utils/dateUtils.js` — вхождения расписания групп на ближайшие 14 дней от `startDate` (включая сегодня).
 
 | Поле | Тип | Описание |
 | --- | --- | --- |
 | `groupId` | string | ссылка на Group |
-| `date` | string | `YYYY-MM-DD` конкретного занятия |
-| `start` / `end` | Date | начало и конец (date + startTime + durationMin) |
-| `trialCount` | number | активных пробных записей на эту дату |
-| `capacityLeft` | number | `capacity − enrolled − trialCount` |
+| `groupLevel` | string | уровень группы |
+| `groupTeacher` | string | преподаватель группы |
+| `groupCapacity` | number | вместимость (8) |
+| `day` | string | день недели (рус., из шаблона) |
+| `time` | string | время начала "HH:MM" |
+| `date` | Date | конкретная дата занятия |
+| `dateStr` | string | `dd.MM` для отображения |
+| `dayName` | string | день недели (рус., из даты) |
 
-## TrialBooking (localStorage через zustand persist)
+## TrialSignup (localStorage, ключ `trial_signups`)
+
+Хранится массивом записей (включая отменённые) в `src/utils/storage.js`.
 
 | Поле | Тип | Описание | Валидация |
 | --- | --- | --- | --- |
-| `id` | string | uuid/`Date.now()` | — |
-| `phone` | string | **ключ уникальности**, нормализованный `+7…` (11–15 цифр) | обязательно |
-| `name` | string | имя посетителя | обязательно, ≥ 2 символов |
-| `email` | string\|null | опционально | если есть — `^[^@\s]+@[^@\s]+\.[^@\s]+$` |
-| `groupId` | string | ссылка на Group | обязательно, существующая группа |
-| `lessonDate` | string | `YYYY-MM-DD` выбранного занятия | вхождение расписания группы в окне 14 дней; на дату `capacityLeft > 0` |
-| `createdAt` | string | ISO-датавремя | auto |
-| `status` | `'active'` | запись активна | — |
+| `id` | string | `Date.now().toString()` | — |
+| `name` | string | имя посетителя | обязательно, непустое (trim) |
+| `phone` | string | `+7 (XXX) XXX-XX-XX` — **ключ уникальности** | обязательно, строго маска |
+| `email` | string | опционально | если есть — `^[^\s@]+@[^\s@]+\.[^\s@]+$` |
+| `groupId` | string | ссылка на Group | — |
+| `groupLevel` | string | снимок уровня группы | — |
+| `groupTeacher` | string | снимок преподавателя | — |
+| `date` | string | `YYYY-MM-DD` занятия (локальная дата) | — |
+| `time` | string | время начала | — |
+| `status` | `'active' \| 'cancelled'` | активная или отменённая | — |
 
-## Стор `useBookingsStore` (persist key: `trial-bookings`)
+## Хранилище `src/utils/storage.js`
 
-- `bookings: TrialBooking[]` — только активные; отмена = удаление.
-- `myPhone: string | null` — телефон «своей» записи: ставится в `addBooking`, сбрасывается при `cancelByPhone(myPhone)`; по нему `MyBooking` определяет, какую запись показывать.
-- `addBooking(b) → id` — если `phone` уже есть: старая запись заменяется новой (одна активная на телефон); `myPhone = b.phone`.
-- `cancelByPhone(phone)` — удалить запись (место возвращается); если `phone === myPhone`, сбросить `myPhone`.
-- `findByPhone(phone)` — найти активную запись.
-- `trialsOn(groupId, date) → number` — число пробных на занятие.
+- `getSignups() → TrialSignup[]` — читает `trial_signups` из localStorage (при ошибке парсинга — `[]`).
+- `saveSignup(signup)` — все активные записи с тем же `phone` помечает `cancelled`, затем добавляет новую со `status: 'active'` и `id = Date.now()` (одна активная запись на телефон, история сохраняется).
 
 ## Правила и переходы
 
-- `capacityLeft > 0` — обязательное условие создания записи (иначе «мест нет»).
-- Повторная запись с тем же `phone` → `addBooking` удаляет старую и ставит новую.
-- `cancelByPhone` → запись удаляется, `capacityLeft` на её дату увеличивается на 1.
+- `occupied(groupId, date) = count(signup.status === 'active' && groupId && date)` — занятость слота = только пробные записи (штатной занятости нет).
+- Запись блокируется при `occupied >= capacity` — и в UI (кнопка скрыта), и повторно при отправке формы.
+- Повторная отправка с тем же `phone` → диалог «У вас уже есть запись» → «Да, перезаписаться» → `saveSignup` отменяет старую и активирует новую.
+- Отдельного UI отмены записи нет; `cancelled` появляется только при перезаписи.
