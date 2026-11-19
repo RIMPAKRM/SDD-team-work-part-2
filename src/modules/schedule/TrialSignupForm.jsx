@@ -42,10 +42,8 @@ export default function TrialSignupForm({ slot, onClose, onSubmit }) {
   const handlePhoneChange = (e) => {
     let value = e.target.value.replace(/\D/g, '');
     
-    // Обработка префиксов 8 или 7
-    if (value.startsWith('8') && value.length > 1) {
-      value = value.substring(1);
-    } else if (value.startsWith('7') && value.length > 10) {
+    // Если 11 цифр и начинается с 7 или 8, убираем первую цифру (код страны)
+    if (value.length === 11 && (value.startsWith('7') || value.startsWith('8'))) {
       value = value.substring(1);
     }
 
