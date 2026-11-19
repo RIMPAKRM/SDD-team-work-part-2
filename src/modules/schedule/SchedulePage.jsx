@@ -36,7 +36,7 @@ export default function SchedulePage() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {sortedDates.length === 0 ? (
-          <p className="text-gray-500">Нет доступных занятий на ближайшие 14 дней.</p>
+          <p className="text-gray-500">Нет доступных занятий на ближайших 14 дней.</p>
         ) : (
           sortedDates.map((dateGroup) => (
             <div key={dateGroup.dateStr} className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex flex-col">
