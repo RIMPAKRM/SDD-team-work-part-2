@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { getSignups, saveSignup } from '../../utils/storage';
 
 export default function TrialSignupForm({ slot, onClose, onSuccess }) {
@@ -11,6 +11,7 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
   const [existingSignup, setExistingSignup] = useState(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   const year = slot.date.getFullYear();
   const month = String(slot.date.getMonth() + 1).padStart(2, '0');
@@ -36,8 +37,9 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (isSubmitting || !validate()) return;
+    if (isSubmittingRef.current || !validate()) return;
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
 
     // Проверка занятости
@@ -50,6 +52,7 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
 
     if (occupied >= slot.groupCapacity) {
       alert('К сожалению, на это время мест больше нет.');
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
       return;
     }
@@ -59,6 +62,7 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
     
     if (duplicate && !existingSignup) {
       setExistingSignup(duplicate);
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
       return;
     }
@@ -73,6 +77,7 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
       time: slot.time
     });
     setIsSuccess(true);
+    isSubmittingRef.current = false;
     setIsSubmitting(false);
   };
 
@@ -117,7 +122,25 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
             <div className="flex gap-2 mt-4">
               <button onClick={() => setExistingSignup(null)} className="flex-1 py-1 border rounded" disabled={isSubmitting}>Нет</button>
               <button onClick={() => {
+                if (isSubmittingRef.current) return;
+                isSubmittingRef.current = true;
                 setIsSubmitting(true);
+
+                // Повторная проверка занятости перед перезаписью
+                const allSignups = getSignups();
+                const occupied = allSignups.filter(s => 
+                  s.status === 'active' && 
+                  s.groupId === slot.groupId && 
+                  s.date === slotDateISO
+                ).length;
+
+                if (occupied >= slot.groupCapacity) {
+                  alert('К сожалению, на это время мест больше нет.');
+                  isSubmittingRef.current = false;
+                  setIsSubmitting(false);
+                  return;
+                }
+
                 saveSignup({ 
                   ...formData, 
                   groupId: slot.groupId, 
@@ -127,6 +150,7 @@ export default function TrialSignupForm({ slot, onClose, onSuccess }) {
                   time: slot.time 
                 });
                 setIsSuccess(true);
+                isSubmittingRef.current = false;
                 setIsSubmitting(false);
               }} className="flex-1 py-1 bg-blue-600 text-white rounded" disabled={isSubmitting}>Да, перезаписаться</button>
             </div>
