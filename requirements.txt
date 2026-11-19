@@ -1,0 +1,26 @@
+# Зависимости проекта «Школа английского языка»
+# Установка: см. README.md → «Быстрый старт»
+
+# React + роутинг
+react
+react-dom
+react-router-dom
+
+# Состояние + хранилище браузера
+zustand
+
+# Расписание
+react-big-calendar
+date-fns
+
+# Графики
+recharts
+
+# Иконки
+lucide-react
+
+# Сборка и стили (dev)
+vite
+@vitejs/plugin-react
+tailwindcss
+@tailwindcss/vite
