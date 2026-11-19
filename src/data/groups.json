@@ -1,0 +1,62 @@
+[
+  {
+    "id": "group-1",
+    "level": "A1",
+    "teacher": "Анна Иванова",
+    "schedule": [
+      { "day": "Понедельник", "time": "18:00" },
+      { "day": "Четверг", "time": "18:00" }
+    ],
+    "capacity": 8
+  },
+  {
+    "id": "group-2",
+    "level": "A2",
+    "teacher": "Борис Петров",
+    "schedule": [
+      { "day": "Вторник", "time": "19:00" },
+      { "day": "Пятница", "time": "19:00" }
+    ],
+    "capacity": 8
+  },
+  {
+    "id": "group-3",
+    "level": "B1",
+    "teacher": "Елена Сидорова",
+    "schedule": [
+      { "day": "Среда", "time": "18:00" },
+      { "day": "Суббота", "time": "11:00" }
+    ],
+    "capacity": 8
+  },
+  {
+    "id": "group-4",
+    "level": "B2",
+    "teacher": "Дмитрий Смирнов",
+    "schedule": [
+      { "day": "Понедельник", "time": "20:00" },
+      { "day": "Четверг", "time": "20:00" }
+    ],
+    "capacity": 8
+  },
+  {
+    "id": "group-5",
+    "level": "C1",
+    "teacher": "Ольга Кузнецова",
+    "schedule": [
+      { "day": "Вторник", "time": "20:00" },
+      { "day": "Пятница", "time": "20:00" }
+    ],
+    "capacity": 8
+  },
+  {
+    "id": "group-6",
+    "level": "IELTS Prep",
+    "teacher": "Игорь Васильев",
+    "schedule": [
+      { "day": "Среда", "time": "20:00" },
+      { "day": "Суббота", "time": "13:00" }
+    ],
+    "capacity": 8
+  }
+]
