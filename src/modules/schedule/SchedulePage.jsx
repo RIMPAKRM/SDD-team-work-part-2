@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import groups from '../../data/groups.json';
 import { getUpcomingSlots } from '../../utils/dateUtils';
+import { getSignups } from '../../utils/storage';
 import TrialSignupForm from './TrialSignupForm';
 
 export default function SchedulePage() {
   const upcomingSlots = getUpcomingSlots(groups);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [signups, setSignups] = useState([]);
+
+  // Загружаем записи при монтировании
+  useEffect(() => {
+    setSignups(getSignups());
+  }, []);
 
   const slotsByDate = upcomingSlots.reduce((acc, slot) => {
     const dateKey = slot.dateStr;
@@ -39,7 +46,10 @@ export default function SchedulePage() {
               
               <div className="space-y-4">
                 {dateGroup.items.map((slot) => {
-                  const occupied = 0; 
+                  // Считаем занятость для конкретной группы и даты
+                  const occupied = signups.filter(s => 
+                    s.groupId === slot.groupId && s.dateStr === slot.dateStr
+                  ).length;
                   const isFull = occupied >= slot.groupCapacity;
 
                   return (
@@ -83,8 +93,8 @@ export default function SchedulePage() {
         <TrialSignupForm 
           slot={selectedSlot} 
           onClose={() => setSelectedSlot(null)}
-          onSubmit={(data) => {
-            console.log('Form submitted:', data, selectedSlot);
+          onSuccess={() => {
+            setSignups(getSignups()); // Обновляем список записей
             setSelectedSlot(null);
           }}
         />
