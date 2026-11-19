@@ -14,10 +14,11 @@ const DAY_MAP = {
 /**
  * Генерирует список слотов занятий на ближайшие 14 дней
  * @param {Array} groups - Список групп
- * @returns {Array} - Список объектов { date, dateStr, dayName, ...groupData }
+ * @param {Date} startDate - Начальная дата (по умолчанию сегодня)
+ * @returns {Array} - Список объектов { date, dateStr, dayName, ...slotData }
  */
-export const getUpcomingSlots = (groups) => {
-  const today = startOfDay(new Date());
+export const getUpcomingSlots = (groups, startDate = new Date()) => {
+  const today = startOfDay(startDate);
   const slots = [];
 
   for (let i = 0; i < 14; i++) {

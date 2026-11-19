@@ -9,6 +9,7 @@ export default function SchedulePage() {
     const dateKey = slot.dateStr;
     if (!acc[dateKey]) {
       acc[dateKey] = {
+        date: slot.date, // Сохраняем объект Date для сортировки
         dateStr: slot.dateStr,
         dayName: slot.dayName,
         items: []
@@ -18,12 +19,8 @@ export default function SchedulePage() {
     return acc;
   }, {});
 
-  const sortedDates = Object.values(slotsByDate).sort((a, b) => {
-    // Простая сортировка по дате (dd.MM)
-    const [d1, m1] = a.dateStr.split('.').map(Number);
-    const [d2, m2] = b.dateStr.split('.').map(Number);
-    return (m1 * 31 + d1) - (m2 * 31 + d2);
-  });
+  // Сортируем по объекту Date
+  const sortedDates = Object.values(slotsByDate).sort((a, b) => a.date - b.date);
 
   return (
     <div className="p-4 max-w-6xl mx-auto">
@@ -41,12 +38,12 @@ export default function SchedulePage() {
               
               <div className="space-y-4">
                 {dateGroup.items.map((slot) => {
-                  const occupied = 0; // Логика занятости будет добавлена позже
+                  const occupied = 0; 
                   const isFull = occupied >= slot.groupCapacity;
 
                   return (
                     <div 
-                      key={`${slot.groupId}-${slot.dateStr}`} 
+                      key={`${slot.groupId}-${slot.dateStr}-${slot.time}`} 
                       className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
                     >
                       <div className="flex justify-between items-start mb-2">
