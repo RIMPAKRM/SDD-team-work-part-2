@@ -1,15 +1,17 @@
+import { useState } from 'react';
 import groups from '../../data/groups.json';
 import { getUpcomingSlots } from '../../utils/dateUtils';
+import TrialSignupForm from './TrialSignupForm';
 
 export default function SchedulePage() {
   const upcomingSlots = getUpcomingSlots(groups);
+  const [selectedSlot, setSelectedSlot] = useState(null);
 
-  // Группируем слоты по датам для отображения
   const slotsByDate = upcomingSlots.reduce((acc, slot) => {
     const dateKey = slot.dateStr;
     if (!acc[dateKey]) {
       acc[dateKey] = {
-        date: slot.date, // Сохраняем объект Date для сортировки
+        date: slot.date,
         dateStr: slot.dateStr,
         dayName: slot.dayName,
         items: []
@@ -19,7 +21,6 @@ export default function SchedulePage() {
     return acc;
   }, {});
 
-  // Сортируем по объекту Date
   const sortedDates = Object.values(slotsByDate).sort((a, b) => a.date - b.date);
 
   return (
@@ -56,8 +57,18 @@ export default function SchedulePage() {
                       <p className="text-sm text-gray-600 mb-1">Преподаватель: <span className="font-medium text-gray-900">{slot.groupTeacher}</span></p>
                       <p className="text-sm text-gray-600 mb-3">Время: <span className="font-medium text-gray-900">{slot.time}</span></p>
                       
-                      <div className="text-xs font-bold text-gray-500">
-                        Занято {occupied} из {slot.groupCapacity}
+                      <div className="flex justify-between items-center mt-4">
+                        <div className="text-xs font-bold text-gray-500">
+                          Занято {occupied} из {slot.groupCapacity}
+                        </div>
+                        {!isFull && (
+                          <button 
+                            onClick={() => setSelectedSlot(slot)}
+                            className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors"
+                          >
+                            Записаться
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -67,6 +78,17 @@ export default function SchedulePage() {
           ))
         )}
       </div>
+
+      {selectedSlot && (
+        <TrialSignupForm 
+          slot={selectedSlot} 
+          onClose={() => setSelectedSlot(null)}
+          onSubmit={(data) => {
+            console.log('Form submitted:', data, selectedSlot);
+            setSelectedSlot(null);
+          }}
+        />
+      )}
     </div>
   );
 }
