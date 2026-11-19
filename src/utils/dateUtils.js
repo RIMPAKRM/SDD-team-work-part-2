@@ -18,7 +18,8 @@ const DAY_MAP = {
  * @returns {Array} - Список объектов { date, dateStr, dayName, ...slotData }
  */
 export const getUpcomingSlots = (groups, startDate = new Date()) => {
-  const today = startOfDay(startDate);
+  // Создаем копию даты, чтобы не мутировать входящий объект
+  const today = startOfDay(new Date(startDate.getTime()));
   const slots = [];
 
   for (let i = 0; i < 14; i++) {
