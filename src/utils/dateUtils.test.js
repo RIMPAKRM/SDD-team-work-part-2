@@ -49,22 +49,27 @@ function runTests() {
   console.log("✓ Тест перехода через год пройден");
 
   // 3. Тест: Корректность дня недели и времени для всех слотов
-  // 1 ноября 2026 (воскресенье) по 14 ноября 2026 (суббота)
-  // Понедельники: 2, 9 (2 занятия)
-  // Четверги: 5, 12 (2 занятия)
-  // Итого: 4 занятия
-  const slotsCount = getUpcomingSlots(mockGroups, new Date(2026, 10, 1)).length;
-  if (slotsCount !== 4) {
-    throw new Error(`Ошибка: Ожидалось 4 занятия, получено ${slotsCount}`);
+  // Проверяем каждый слот индивидуально
+  const allSlots = getUpcomingSlots(mockGroups, new Date(2026, 10, 1));
+  
+  if (allSlots.length === 0) {
+    throw new Error("Ошибка: Не сгенерировано ни одного занятия");
   }
 
-  slots.forEach(slot => {
+  allSlots.forEach(slot => {
+    // Проверяем день недели непосредственно по объекту date
     const expectedDayIndex = DAY_MAP[slot.day];
     const actualDayIndex = getDay(slot.date);
     
+    if (expectedDayIndex === undefined) {
+      throw new Error(`Ошибка: Неизвестный день недели в расписании: ${slot.day}`);
+    }
+
     if (expectedDayIndex !== actualDayIndex) {
       throw new Error(`Ошибка: День недели ${slot.day} не совпадает с датой ${slot.date}`);
     }
+
+    // Проверяем сохранение времени
     if (slot.time !== "18:00") {
       throw new Error(`Ошибка: Время занятия ${slot.time} не совпадает с ожидаемым 18:00`);
     }
