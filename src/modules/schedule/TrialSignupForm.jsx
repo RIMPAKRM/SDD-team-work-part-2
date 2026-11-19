@@ -27,6 +27,13 @@ export default function TrialSignupForm({ slot, onClose, onSubmit }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Проверка на заполненность группы (на текущем этапе всегда 0, но логика готова)
+    const occupied = 0; 
+    if (occupied >= slot.groupCapacity) {
+      alert('К сожалению, в этой группе больше нет мест.');
+      return;
+    }
+
     if (validate()) {
       onSubmit(formData);
     }
@@ -34,7 +41,16 @@ export default function TrialSignupForm({ slot, onClose, onSubmit }) {
 
   const handlePhoneChange = (e) => {
     let value = e.target.value.replace(/\D/g, '');
-    if (value.startsWith('7')) value = value.substring(1);
+    
+    // Обработка префиксов 8 или 7
+    if (value.startsWith('8') && value.length > 1) {
+      value = value.substring(1);
+    } else if (value.startsWith('7') && value.length > 10) {
+      value = value.substring(1);
+    }
+
+    // Ограничение до 10 цифр
+    value = value.substring(0, 10);
     
     let formatted = '+7 (';
     if (value.length > 0) formatted += value.substring(0, 3);
@@ -56,9 +72,11 @@ export default function TrialSignupForm({ slot, onClose, onSubmit }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Имя</label>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Имя</label>
             <input
+              id="name"
               type="text"
+              required
               className="w-full border rounded-lg p-2 mt-1"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -67,9 +85,11 @@ export default function TrialSignupForm({ slot, onClose, onSubmit }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Телефон</label>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Телефон</label>
             <input
-              type="text"
+              id="phone"
+              type="tel"
+              required
               placeholder="+7 (XXX) XXX-XX-XX"
               className="w-full border rounded-lg p-2 mt-1"
               value={formData.phone}
@@ -79,8 +99,9 @@ export default function TrialSignupForm({ slot, onClose, onSubmit }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email (опционально)</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email (опционально)</label>
             <input
+              id="email"
               type="email"
               className="w-full border rounded-lg p-2 mt-1"
               value={formData.email}
